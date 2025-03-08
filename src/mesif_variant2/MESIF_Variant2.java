@@ -21,6 +21,13 @@ public class MESIF_Variant2 {
 
     private static double b_max = Double.NEGATIVE_INFINITY;
     private static final ReentrantLock lock = new ReentrantLock();
+    private static final ReentrantLock[] rowLocks = new ReentrantLock[1000];
+
+    static {
+        for (int i = 0; i < rowLocks.length; i++) {
+            rowLocks[i] = new ReentrantLock();
+        }
+    }
 
     public static void main(String[] args) {
         System.out.println("Var 2");
@@ -186,7 +193,13 @@ public class MESIF_Variant2 {
                 c = (t - sum) - y;
                 sum = t;
             }
-            result[i] = sum;
+
+            rowLocks[i].lock();
+            try {
+                result[i] = sum;
+            } finally {
+                rowLocks[i].unlock();
+            }
         }
     }
 
@@ -201,7 +214,12 @@ public class MESIF_Variant2 {
                     c = (t - sum) - y;
                     sum = t;
                 }
-                result[i][j] = sum;
+                rowLocks[j].lock();
+                try {
+                    result[i][j] = sum;
+                } finally {
+                    rowLocks[j].unlock();
+                }
             }
         }
     }
@@ -209,7 +227,12 @@ public class MESIF_Variant2 {
     private void subtractMatricesPart(double[][] A, double[][] B, double[][] result, int start, int end) {
         for (int i = 0; i < A.length; i++) {
             for (int j = start; j < end; j++) {
-                result[i][j] = A[i][j] - B[i][j];
+                rowLocks[j].lock();
+                try {
+                    result[i][j] = A[i][j] - B[i][j];
+                } finally {
+                    rowLocks[j].unlock();
+                }
             }
         }
     }
@@ -258,14 +281,24 @@ public class MESIF_Variant2 {
         t1 = new Thread(() -> {
             multiplyPartMatrixVectorKahan(MT, D, MT_D, 0, halfSize);
             for (int i = 0; i < halfSize; i++) {
-                Y[i] = MT_D[i] + (b_max * D[i]);
+                rowLocks[i].lock();
+                try {
+                    Y[i] = MT_D[i] + (b_max * D[i]);
+                } finally {
+                    rowLocks[i].unlock();
+                }
             }
         });
 
         t2 = new Thread(() -> {
             multiplyPartMatrixVectorKahan(MT, D, MT_D, halfSize, B.length);
             for (int i = halfSize; i < B.length; i++) {
-                Y[i] = MT_D[i] + (b_max * D[i]);
+                rowLocks[i].lock();
+                try {
+                    Y[i] = MT_D[i] + (b_max * D[i]);
+                } finally {
+                    rowLocks[i].unlock();
+                }
             }
         });
 
@@ -289,7 +322,12 @@ public class MESIF_Variant2 {
         Thread t1 = new Thread(() -> {
             for (int i = 0; i < MT.length; i++) {
                 for (int j = 0; j < halfSize; j++) {
-                    temp1[i][j] = MT[i][j] + MZ[i][j]; // temp1 = (MT + MZ)
+                    rowLocks[j].lock();
+                    try {
+                        temp1[i][j] = MT[i][j] + MZ[i][j]; // temp1 = (MT + MZ)
+                    } finally {
+                        rowLocks[j].unlock();
+                    }
                 }
             }
             multiplyMatricesPartKahan(MT, temp1, temp2, 0, halfSize); // temp2 = MT * temp1
@@ -300,7 +338,12 @@ public class MESIF_Variant2 {
         Thread t2 = new Thread(() -> {
             for (int i = 0; i < MT.length; i++) {
                 for (int j = halfSize; j < MT.length; j++) {
-                    temp1[i][j] = MT[i][j] + MZ[i][j];
+                    rowLocks[j].lock();
+                    try {
+                        temp1[i][j] = MT[i][j] + MZ[i][j];
+                    } finally {
+                        rowLocks[j].unlock();
+                    }
                 }
             }
             multiplyMatricesPartKahan(MT, temp1, temp2, halfSize, MT.length);
