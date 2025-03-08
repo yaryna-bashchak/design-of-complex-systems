@@ -224,22 +224,12 @@ public class MESIF_Variant1 {
         return result;
     }
 
-    private static double kahanSum(double a, double b) {
-        double sum = 0.0;
-        double c = 0.0;
-        double y = b - c;
-        double t = a + y;
-        c = (t - a) - y;
-        sum = t;
-        return sum;
-    }
-
-    private static double[][] addMatricesKahan(double[][] matrix1, double[][] matrix2) {
+    private static double[][] addMatrices(double[][] matrix1, double[][] matrix2) {
         int size = matrix1.length;
         double[][] result = new double[size][size];
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                result[i][j] = kahanSum(matrix1[i][j], matrix2[i][j]);
+                result[i][j] = matrix1[i][j] + matrix2[i][j];
             }
         }
         return result;
@@ -254,20 +244,20 @@ public class MESIF_Variant1 {
         double maxB = findMax(B_local);
         double[] Y = new double[D_local.length];
         for (int i = 0; i < D_local.length; i++) {
-            Y[i] = kahanSum(MT_D[i], maxB * D_local[i]);
+            Y[i] = MT_D[i] + (maxB * D_local[i]);
         }
         return Y;
     }
 
     public static double[][] calc_formula2(double[][] MT_local, double[][] MZ_local) {
-        double[][] MT_plus_MZ = addMatricesKahan(MT_local, MZ_local);
+        double[][] MT_plus_MZ = addMatrices(MT_local, MZ_local);
         double[][] MT_MT_plus_MZ = multiplyMatricesKahan(MT_local, MT_plus_MZ);
         double[][] MZ_MT = multiplyMatricesKahan(MZ_local, MT_local);
         int size = MT_local.length;
         double[][] MA = new double[size][size];
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                MA[i][j] = kahanSum(MT_MT_plus_MZ[i][j], -MZ_MT[i][j]);
+                MA[i][j] = MT_MT_plus_MZ[i][j] - MZ_MT[i][j];
             }
         }
         return MA;

@@ -174,16 +174,6 @@ public class MESIF_Variant2 {
         }
     }
 
-    private static double kahanSum(double a, double b) {
-        double sum = 0.0;
-        double c = 0.0;
-        double y = b - c;
-        double t = a + y;
-        c = (t - a) - y;
-        sum = t;
-        return sum;
-    }
-
     private void multiplyPartMatrixVectorKahan(double[][] matrix, double[] vector, double[] result, int start, int end) {
         int size = vector.length;
 
@@ -216,10 +206,10 @@ public class MESIF_Variant2 {
         }
     }
 
-    private void subtractMatricesPartKahan(double[][] A, double[][] B, double[][] result, int start, int end) {
+    private void subtractMatricesPart(double[][] A, double[][] B, double[][] result, int start, int end) {
         for (int i = 0; i < A.length; i++) {
             for (int j = start; j < end; j++) {
-                result[i][j] = kahanSum(A[i][j], -B[i][j]);
+                result[i][j] = A[i][j] - B[i][j];
             }
         }
     }
@@ -268,14 +258,14 @@ public class MESIF_Variant2 {
         t1 = new Thread(() -> {
             multiplyPartMatrixVectorKahan(MT, D, MT_D, 0, halfSize);
             for (int i = 0; i < halfSize; i++) {
-                Y[i] = kahanSum(MT_D[i], b_max * D[i]);
+                Y[i] = MT_D[i] + (b_max * D[i]);
             }
         });
 
         t2 = new Thread(() -> {
             multiplyPartMatrixVectorKahan(MT, D, MT_D, halfSize, B.length);
             for (int i = halfSize; i < B.length; i++) {
-                Y[i] = kahanSum(MT_D[i], b_max * D[i]);
+                Y[i] = MT_D[i] + (b_max * D[i]);
             }
         });
 
@@ -296,7 +286,6 @@ public class MESIF_Variant2 {
         double[][] temp3 = new double[MT.length][MT.length]; // MZ * MT
         MA = new double[MT.length][MT.length];
 
-        // temp1 = (MT + MZ)
         Thread t1 = new Thread(() -> {
             for (int i = 0; i < MT.length; i++) {
                 for (int j = 0; j < halfSize; j++) {
@@ -305,7 +294,7 @@ public class MESIF_Variant2 {
             }
             multiplyMatricesPartKahan(MT, temp1, temp2, 0, halfSize); // temp2 = MT * temp1
             multiplyMatricesPartKahan(MZ, MT, temp3, 0, halfSize); // temp3 = MZ * MT
-            subtractMatricesPartKahan(temp2, temp3, MA, 0, halfSize); // MA = temp2 - temp3
+            subtractMatricesPart(temp2, temp3, MA, 0, halfSize); // MA = temp2 - temp3
         });
 
         Thread t2 = new Thread(() -> {
@@ -316,7 +305,7 @@ public class MESIF_Variant2 {
             }
             multiplyMatricesPartKahan(MT, temp1, temp2, halfSize, MT.length);
             multiplyMatricesPartKahan(MZ, MT, temp3, halfSize, MT.length);
-            subtractMatricesPartKahan(temp2, temp3, MA, halfSize, MT.length);
+            subtractMatricesPart(temp2, temp3, MA, halfSize, MT.length);
         });
 
         t1.start();
