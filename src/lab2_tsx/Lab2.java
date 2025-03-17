@@ -236,9 +236,10 @@ public class Lab2 {
 
             multiplyPartMatrixVectorKahan(MT, D, MT_D, start, end, lockMT_D);
             for (int i = start; i <= end; i++) {
+                double result = MT_D[i] + (b_max * D[i]);
                 lockY.lock();
                 try {
-                    Y[i] = MT_D[i] + (b_max * D[i]);
+                    Y[i] = result;
                 } finally {
                     lockY.unlock();
                 }
@@ -246,25 +247,27 @@ public class Lab2 {
             
             // MА = MT*(MT+MZ) - MZ*MT
             for (int i = 0; i < MT.length; i++) {
-                lockMT_plus_MZ.lock();
-                try {
-                    for (int j = start; j <= end; j++) {
-                        MT_plus_MZ[i][j] = MT[i][j] + MZ[i][j];
+                for (int j = start; j <= end; j++) {
+                    double result = MT[i][j] + MZ[i][j];
+                    lockMT_plus_MZ.lock();
+                    try {
+                        MT_plus_MZ[i][j] = result;
+                    } finally {
+                        lockMT_plus_MZ.unlock();
                     }
-                } finally {
-                    lockMT_plus_MZ.unlock();
                 }
             }
             multiplyMatricesPartKahan(MT, MT_plus_MZ, MT_mlt_MT_plus_MZ, start, end, lockMT_mlt_MT_plus_MZ);
             multiplyMatricesPartKahan(MZ, MT, MZ_mlt_MT, start, end, lockMZ_mlt_MT);
             for (int i = 0; i < MT.length; i++) {
-                lockMA.lock();
-                try {
-                    for (int j = start; j <= end; j++) {
-                        MA[i][j] = MT_mlt_MT_plus_MZ[i][j] - MZ_mlt_MT[i][j];
+                for (int j = start; j <= end; j++) {
+                    double result = MT_mlt_MT_plus_MZ[i][j] - MZ_mlt_MT[i][j];
+                    lockMA.lock();
+                    try {
+                        MA[i][j] = result;
+                    } finally {
+                        lockMA.unlock();
                     }
-                } finally {
-                    lockMA.unlock();
                 }
             }
         }
@@ -293,21 +296,22 @@ public class Lab2 {
     
         private void multiplyMatricesPartKahan(double[][] A, double[][] B, double[][] result, int start, int end, Lock currentLock) {
             for (int i = 0; i < B.length; i++) {
-                currentLock.lock();
-                try {
-                    for (int j = start; j <= end; j++) {
-                        double sum = 0.0;
-                        double c = 0.0;
-                        for (int k = 0; k < B.length; k++) {
-                            double y = A[i][k] * B[k][j] - c;
-                            double t = sum + y;
-                            c = (t - sum) - y;
-                            sum = t;
-                        }
-                        result[i][j] = sum;
+                for (int j = start; j <= end; j++) {
+                    double sum = 0.0;
+                    double c = 0.0;
+                    for (int k = 0; k < B.length; k++) {
+                        double y = A[i][k] * B[k][j] - c;
+                        double t = sum + y;
+                        c = (t - sum) - y;
+                        sum = t;
                     }
-                } finally {
-                    currentLock.unlock();
+
+                    currentLock.lock();
+                    try {
+                        result[i][j] = sum;
+                    } finally {
+                        currentLock.unlock();
+                    }
                 }
             }
         }
