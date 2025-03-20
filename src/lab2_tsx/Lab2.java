@@ -49,7 +49,7 @@ public class Lab2 {
             System.out.println("Reading file: " + filePath);
             loadData(filePath, size);
 
-            String resultFilePath = "results_lab2_var1/size_" + currentSize + ".txt";
+            String resultFilePath = "results_lab2_wo_tsx/size_" + currentSize + ".txt";
 
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFilePath))) {
                 writer.write("");
@@ -87,7 +87,7 @@ public class Lab2 {
             printMatrix(MA);
         }
 
-        writeExecutionTimesToFile("results_lab2_var1/times.txt", times);
+        writeExecutionTimesToFile("results_lab2_wo_tsx/times.txt", times);
 
         System.out.println("Size,Times(ns)");
         for (Integer size : times.keySet()) {
@@ -236,10 +236,9 @@ public class Lab2 {
 
             multiplyPartMatrixVectorKahan(MT, D, MT_D, start, end, lockMT_D);
             for (int i = start; i <= end; i++) {
-                double result = MT_D[i] + (b_max * D[i]);
                 lockY.lock();
                 try {
-                    Y[i] = result;
+                    Y[i] = MT_D[i] + (b_max * D[i]);
                 } finally {
                     lockY.unlock();
                 }
@@ -248,10 +247,9 @@ public class Lab2 {
             // MА = MT*(MT+MZ) - MZ*MT
             for (int i = 0; i < MT.length; i++) {
                 for (int j = start; j <= end; j++) {
-                    double result = MT[i][j] + MZ[i][j];
                     lockMT_plus_MZ.lock();
                     try {
-                        MT_plus_MZ[i][j] = result;
+                        MT_plus_MZ[i][j] = MT[i][j] + MZ[i][j];;
                     } finally {
                         lockMT_plus_MZ.unlock();
                     }
@@ -261,10 +259,9 @@ public class Lab2 {
             multiplyMatricesPartKahan(MZ, MT, MZ_mlt_MT, start, end, lockMZ_mlt_MT);
             for (int i = 0; i < MT.length; i++) {
                 for (int j = start; j <= end; j++) {
-                    double result = MT_mlt_MT_plus_MZ[i][j] - MZ_mlt_MT[i][j];
                     lockMA.lock();
                     try {
-                        MA[i][j] = result;
+                        MA[i][j] = MT_mlt_MT_plus_MZ[i][j] - MZ_mlt_MT[i][j];
                     } finally {
                         lockMA.unlock();
                     }
